@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https://*.tile.openstreetmap.org; connect-src 'self' https://*.tile.openstreetmap.org;"
+    />
+    <title>Rute Takbir Keliling Masjid Baitussalam</title>
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      crossorigin="anonymous"
+    />
+
+    <style>
+      :root {
+        --primary: #2ecc71;
+        --secondary: #27ae60;
+        --accent: #e74c3c;
+        --text: #333;
+        --bg: #f0f4f8;
+        --white: #ffffff;
+        --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", "Arial", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+        overflow-x: hidden;
+      }
+
+      .container {
+        height: 100vh;
+        width: 100vw;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #map {
+        flex: 1;
+        z-index: 1;
+        min-height: 0;
+      }
+
+      .header {
+        position: sticky;
+        top: 0;
+        width: 100%;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        padding: 1rem;
+        text-align: center;
+        z-index: 2;
+        box-shadow: var(--shadow);
+      }
+
+      .header h1 {
+        color: var(--white);
+        font-size: clamp(1.2rem, 4vw, 1.5rem);
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      .custom-marker {
+        background: var(--primary);
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid var(--white);
+        box-shadow: var(--shadow);
+        transition: transform 0.2s ease;
+      }
+
+      .custom-marker:hover {
+        transform: scale(1.2);
+      }
+
+      .loading-indicator {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        font-weight: 500;
+      }
+
+      .arrow {
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-bottom: 10px solid var(--accent);
+        transform-origin: center bottom;
+      }
+
+      .rundown-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: var(--primary);
+        color: var(--white);
+        border: none;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
+        cursor: pointer;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+        z-index: 3;
+      }
+
+      .rundown-btn:hover {
+        background: var(--secondary);
+        transform: scale(1.1);
+      }
+
+      .rundown-container {
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        max-height: 70vh;
+        background: var(--white);
+        box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+        overflow-y: auto;
+        z-index: 4;
+        padding: 1rem;
+        border-radius: 10px 10px 0 0;
+        animation: slideUp 0.3s ease-in-out;
+      }
+
+      .rundown-container.active {
+        display: block;
+      }
+
+      .rundown-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+      }
+
+      .rundown-table th,
+      .rundown-table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+      }
+
+      .rundown-table th {
+        background: var(--primary);
+        color: var(--white);
+        position: sticky;
+        top: 0;
+      }
+
+      .rundown-table tr:nth-child(even) {
+        background: #f9f9f9;
+      }
+
+      @keyframes slideUp {
+        from {
+          transform: translateY(100%);
+        }
+        to {
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          height: auto;
+          min-height: 100vh;
+        }
+
+        #map {
+          height: 60vh;
+        }
+
+        .rundown-btn {
+          width: 40px;
+          height: 40px;
+          font-size: 1rem;
+        }
+
+        .rundown-table th,
+        .rundown-table td {
+          font-size: 0.9rem;
+          padding: 0.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Rute Takbir Keliling Masjid Baitussalam</h1>
+      </div>
+      <div id="map"></div>
+    </div>
+    <button class="rundown-btn" title="Lihat Rundown">📋</button>
+    <div class="rundown-container">
+      <h2>Rundown Takbir Keliling</h2>
+      <table class="rundown-table">
+        <thead>
+          <tr>
+            <th>Waktu</th>
+            <th>Kegiatan</th>
+            <th>Lokasi</th>
+          </tr>
+        </thead>
+        <tbody id="rundown-body">
+          <!-- Data akan diisi dari tabel.json -->
+        </tbody>
+      </table>
+    </div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      crossorigin="anonymous"
+    ></script>
+
+    <script>
+      // Filter console messages
+      const originalConsoleError = console.error;
+      const originalConsoleWarn = console.warn;
+
+      console.error = (...args) => {
+        const msg = args.join(" ");
+        if (
+          !msg.match(
+            /cross-origin|CORS|sandbox|cookie|spoofer\.js|presenceLoader\.js/
+          )
+        ) {
+          originalConsoleError.apply(console, args);
+        }
+      };
+
+      console.warn = (...args) => {
+        const msg = args.join(" ");
+        if (!msg.match(/cookie|cross-origin|CORS/)) {
+          originalConsoleWarn.apply(console, args);
+        }
+      };
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const loadingDiv = document.createElement("div");
+        loadingDiv.className = "loading-indicator";
+        loadingDiv.textContent = "Memuat peta...";
+        document.body.appendChild(loadingDiv);
+
+        try {
+          const map = L.map("map", {
+            zoomControl: true,
+            scrollWheelZoom: "center",
+            renderer: L.canvas(),
+            preferCanvas: true,
+          }).setView([-7.75, 110.44], 13);
+
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution:
+              '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19,
+            tileSize: 512,
+            zoomOffset: -1,
+            crossOrigin: "anonymous",
+          }).addTo(map);
+
+          // Fetch data dari poin.json
+          fetch("/poin.json")
+            .then((response) => {
+              if (!response.ok) throw new Error("Gagal memuat poin.json");
+              return response.json();
+            })
+            .then((pointsData) => {
+              // Tambahkan layer titik dari data yang di-fetch
+              const pointLayer = L.geoJSON(pointsData, {
+                filter: (feature) => feature.geometry.type === "Point",
+                pointToLayer: (feature, latlng) =>
+                  L.marker(latlng, {
+                    icon: L.divIcon({
+                      className: "custom-marker",
+                      html: '<div class="custom-marker"></div>',
+                      iconSize: [12, 12],
+                      iconAnchor: [6, 6],
+                    }),
+                  }).bindPopup(`<b>Titik ${feature.properties.name}</b>`),
+              }).addTo(map);
+
+              // Buat rute dari data yang di-fetch
+              const routeOrder = Array.from({ length: 70 }, (_, i) =>
+                String(i + 1)
+              );
+              const routeCoordinates = routeOrder
+                .map((name) => {
+                  const point = pointsData.features.find(
+                    (f) => f.properties.name === name
+                  );
+                  return point
+                    ? [
+                        point.geometry.coordinates[1],
+                        point.geometry.coordinates[0],
+                      ]
+                    : null;
+                })
+                .filter(Boolean);
+
+              const createSmoothPath = (coordinates, steps = 5) => {
+                if (coordinates.length < 2) return coordinates;
+                const smoothCoords = [];
+                for (let i = 0; i < coordinates.length - 1; i++) {
+                  smoothCoords.push(coordinates[i]);
+                  for (let j = 1; j < steps; j++) {
+                    const t = j / steps;
+                    const lat =
+                      coordinates[i][0] +
+                      t * (coordinates[i + 1][0] - coordinates[i][0]);
+                    const lng =
+                      coordinates[i][1] +
+                      t * (coordinates[i + 1][1] - coordinates[i][1]);
+                    smoothCoords.push([lat, lng]);
+                  }
+                }
+                smoothCoords.push(coordinates[coordinates.length - 1]);
+                return smoothCoords;
+              };
+
+              const smoothRoute = createSmoothPath(routeCoordinates);
+              let arrowMarkers = [];
+
+              if (smoothRoute.length > 1) {
+                const routeLine = L.polyline(smoothRoute, {
+                  color: "#2ecc71",
+                  weight: 5,
+                  opacity: 0.8,
+                  lineCap: "round",
+                  lineJoin: "round",
+                }).addTo(map);
+
+                addArrowsToLine(smoothRoute);
+                map.fitBounds(routeLine.getBounds(), {
+                  padding: [50, 50],
+                  maxZoom: 15,
+                });
+              }
+
+              function addArrowsToLine(coordinates) {
+                arrowMarkers.forEach((marker) => map.removeLayer(marker));
+                arrowMarkers = [];
+                const minArrowDistance = 80;
+
+                for (let i = 1; i < coordinates.length; i++) {
+                  const p1 = map.latLngToLayerPoint(coordinates[i - 1]);
+                  const p2 = map.latLngToLayerPoint(coordinates[i]);
+                  const segmentLength = Math.sqrt(
+                    Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2)
+                  );
+
+                  if (segmentLength < 10) continue;
+                  const numArrows = Math.max(
+                    1,
+                    Math.floor(segmentLength / minArrowDistance)
+                  );
+
+                  for (let j = 1; j <= numArrows; j++) {
+                    const t = numArrows === 1 ? 0.5 : j / (numArrows + 1);
+                    const lat =
+                      coordinates[i - 1][0] +
+                      t * (coordinates[i][0] - coordinates[i - 1][0]);
+                    const lng =
+                      coordinates[i - 1][1] +
+                      t * (coordinates[i][1] - coordinates[i - 1][1]);
+                    const angle = bearingBetweenPoints(
+                      coordinates[i - 1][0],
+                      coordinates[i - 1][1],
+                      coordinates[i][0],
+                      coordinates[i][1]
+                    );
+
+                    const arrowIcon = L.divIcon({
+                      className: "arrow-icon",
+                      html: `<div class="arrow" style="transform: rotate(${angle}deg)"></div>`,
+                      iconSize: [10, 10],
+                      iconAnchor: [5, 0],
+                    });
+
+                    arrowMarkers.push(
+                      L.marker([lat, lng], { icon: arrowIcon }).addTo(map)
+                    );
+                  }
+                }
+              }
+
+              function bearingBetweenPoints(lat1, lon1, lat2, lon2) {
+                const [rLat1, rLon1, rLat2, rLon2] = [
+                  lat1,
+                  lon1,
+                  lat2,
+                  lon2,
+                ].map((x) => (x * Math.PI) / 180);
+                const y = Math.sin(rLon2 - rLon1) * Math.cos(rLat2);
+                const x =
+                  Math.cos(rLat1) * Math.sin(rLat2) -
+                  Math.sin(rLat1) * Math.cos(rLat2) * Math.cos(rLon2 - rLon1);
+                return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+              }
+
+              map.on("zoomend", () => addArrowsToLine(smoothRoute));
+            })
+            .catch((error) => {
+              console.error("Error fetching poin.json:", error);
+              loadingDiv.textContent = "Gagal memuat data titik";
+            });
+
+          // [Sisanya sama seperti sebelumnya: mobile optimization, legend, rundown, dll.]
+          if (window.innerWidth <= 768) {
+            map.zoomControl.setPosition("topright");
+          }
+
+          const legend = L.control({ position: "bottomright" });
+          legend.onAdd = () => {
+            const div = L.DomUtil.create("div", "info legend");
+            div.style.cssText =
+              "padding:6px 8px;background:rgba(255,255,255,0.8);border-radius:5px;line-height:20px;";
+            div.innerHTML = `
+                        <strong style="display:block;margin-bottom:5px">Rute Takbir:</strong>
+                        <div style="display:flex;align-items:center;margin-bottom:5px">
+                            <div style="width:30px;height:3px;background:#2ecc71;margin-right:5px"></div>
+                            <span>Jalur rute</span>
+                        </div>
+                        <div style="display:flex;align-items:center">
+                            <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:8px solid #e74c3c;margin-right:8px"></div>
+                            <span>Arah rute</span>
+                        </div>
+                    `;
+            return div;
+          };
+          legend.addTo(map);
+
+          map.whenReady(() => {
+            if (document.body.contains(loadingDiv)) {
+              document.body.removeChild(loadingDiv);
+            }
+          });
+
+          const rundownBtn = document.querySelector(".rundown-btn");
+          const rundownContainer = document.querySelector(".rundown-container");
+          const rundownBody = document.getElementById("rundown-body");
+
+          rundownBtn.addEventListener("click", () => {
+            rundownContainer.classList.toggle("active");
+            if (rundownContainer.classList.contains("active")) {
+              rundownContainer.scrollIntoView({ behavior: "smooth" });
+            }
+          });
+
+          fetch("/tabel.json")
+            .then((response) => response.json())
+            .then((data) => renderRundown(data))
+            .catch((error) => {
+              console.error("Error fetching rundown:", error);
+              renderRundown(sampleRundown);
+            });
+
+          function renderRundown(data) {
+            rundownBody.innerHTML = data
+              .map(
+                (item) => `
+                        <tr>
+                            <td>${item.time}</td>
+                            <td>${item.activity}</td>
+                            <td>${item.location}</td>
+                        </tr>
+                    `
+              )
+              .join("");
+          }
+        } catch (error) {
+          console.error("Failed to initialize map:", error);
+          loadingDiv.textContent = "Gagal memuat peta";
+        }
+      });
+    </script>
+  </body>
+</html>

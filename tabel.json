@@ -1,0 +1,22 @@
+[
+    {
+        "time": "18:30",
+        "activity": "Berkumpul",
+        "location": "Masjid Baitussalam"
+    },
+    {
+        "time": "19:00",
+        "activity": "Pembukaan",
+        "location": "Masjid Baitussalam"
+    },
+    {
+        "time": "19:30",
+        "activity": "Mulai Takbir Keliling",
+        "location": "Rute Titik 1"
+    },
+    {
+        "time": "22:00",
+        "activity": "Selesai",
+        "location": "Masjid Baitussalam"
+    }
+]
