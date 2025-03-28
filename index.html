@@ -110,23 +110,49 @@
       .rundown-btn {
         position: fixed;
         bottom: 20px;
-        right: 20px;
+        left: 20px;
         background: var(--primary);
         color: var(--white);
         border: none;
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        font-size: 1.2rem;
+        border-radius: 25px;
+        padding: 10px 20px;
+        font-size: 1rem;
+        font-weight: 500;
         cursor: pointer;
         box-shadow: var(--shadow);
         transition: all 0.3s ease;
         z-index: 3;
+        animation: bounceShake 2s infinite; /* Gabungan mantul dan getar */
       }
 
       .rundown-btn:hover {
         background: var(--secondary);
-        transform: scale(1.1);
+        transform: scale(1.05);
+        animation-play-state: paused; /* Hentikan animasi saat hover */
+      }
+
+      @keyframes bounceShake {
+        0% {
+          transform: translateY(0) translateX(0);
+        }
+        20% {
+          transform: translateY(-10px) translateX(-2px); /* Mantul ke atas + getar kiri */
+        }
+        40% {
+          transform: translateY(-10px) translateX(2px); /* Mantul ke atas + getar kanan */
+        }
+        50% {
+          transform: translateY(0) translateX(-1px); /* Turun + getar kiri */
+        }
+        60% {
+          transform: translateY(-5px) translateX(1px); /* Mantul kecil + getar kanan */
+        }
+        80% {
+          transform: translateY(0) translateX(-1px); /* Kembali + getar kiri */
+        }
+        100% {
+          transform: translateY(0) translateX(0);
+        }
       }
 
       .rundown-container {
@@ -143,6 +169,13 @@
         padding: 1rem;
         border-radius: 10px 10px 0 0;
         animation: slideUp 0.3s ease-in-out;
+        padding: 1.5rem;
+      }
+
+      .rundown-container h2 {
+        text-align: center; /* Judul rata tengah */
+        margin-bottom: 1rem;
+        color: var(--text);
       }
 
       .rundown-container.active {
@@ -158,7 +191,7 @@
       .rundown-table th,
       .rundown-table td {
         padding: 0.75rem;
-        text-align: left;
+        text-align: center;
         border-bottom: 1px solid #eee;
       }
 
@@ -171,6 +204,27 @@
 
       .rundown-table tr:nth-child(even) {
         background: #f9f9f9;
+      }
+
+      .close-rundown {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: var(--accent);
+        color: var(--white);
+        border: none;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        font-size: 1rem;
+        cursor: pointer;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+      }
+
+      .close-rundown:hover {
+        background: #c0392b;
+        transform: scale(1.1);
       }
 
       @keyframes slideUp {
@@ -193,9 +247,14 @@
         }
 
         .rundown-btn {
-          width: 40px;
-          height: 40px;
-          font-size: 1rem;
+          padding: 8px 15px;
+          font-size: 0.9rem;
+        }
+
+        .close-rundown {
+          width: 25px;
+          height: 25px;
+          font-size: 0.9rem;
         }
 
         .rundown-table th,
@@ -213,9 +272,10 @@
       </div>
       <div id="map"></div>
     </div>
-    <button class="rundown-btn" title="Lihat Rundown">📋</button>
+    <button class="rundown-btn" title="Lihat Rundown">Lihat Rundown</button>
     <div class="rundown-container">
       <h2>Rundown Takbir Keliling</h2>
+      <button class="close-rundown" title="Tutup Rundown">✕</button>
       <table class="rundown-table">
         <thead>
           <tr>
@@ -270,22 +330,20 @@
             scrollWheelZoom: "center",
             renderer: L.canvas(),
             preferCanvas: true,
-            zoom: 17, // Default zoom
-            center: [-7.75, 110.44], // Default center
+            zoom: 13,
+            center: [-7.75, 110.44],
           });
 
-          // Tile layer dengan pengaturan untuk ketajaman
           L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution:
               '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 19,
-            maxNativeZoom: 18, // Batasi zoom native untuk menghindari blur
-            tileSize: 256, // Ukuran standar untuk OSM
+            maxNativeZoom: 18,
+            tileSize: 256,
             zoomOffset: 0,
             crossOrigin: "anonymous",
           }).addTo(map);
 
-          // Fetch data dari poin.json
           fetch("/poin.json")
             .then((response) => {
               if (!response.ok) throw new Error("Gagal memuat poin.json");
@@ -355,14 +413,11 @@
                 }).addTo(map);
 
                 addArrowsToLine(smoothRoute);
-
-                // Atur view awal berdasarkan batas rute
                 map.fitBounds(routeLine.getBounds(), {
                   padding: [50, 50],
-                  maxZoom: 15, // Batasi zoom maksimum agar tidak terlalu dekat
+                  maxZoom: 15,
                 });
 
-                // Pastikan render ulang setelah peta dimuat
                 map.whenReady(() => {
                   map.invalidateSize();
                   if (document.body.contains(loadingDiv)) {
@@ -449,53 +504,34 @@
             div.style.cssText =
               "padding:6px 8px;background:rgba(255,255,255,0.8);border-radius:5px;line-height:20px;";
             div.innerHTML = `
-                        <strong style="display:block;margin-bottom:5px">Rute Takbir:</strong>
-                        <div style="display:flex;align-items:center;margin-bottom:5px">
-                            <div style="width:30px;height:3px;background:#2ecc71;margin-right:5px"></div>
-                            <span>Jalur rute</span>
-                        </div>
-                        <div style="display:flex;align-items:center">
-                            <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:8px solid #e74c3c;margin-right:8px"></div>
-                            <span>Arah rute</span>
-                        </div>
-                    `;
+                    <strong style="display:block;margin-bottom:5px">Rute Takbir:</strong>
+                    <div style="display:flex;align-items:center;margin-bottom:5px">
+                        <div style="width:30px;height:3px;background:#2ecc71;margin-right:5px"></div>
+                        <span>Jalur rute</span>
+                    </div>
+                    <div style="display:flex;align-items:center">
+                        <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:8px solid #e74c3c;margin-right:8px"></div>
+                        <span>Arah rute</span>
+                    </div>
+                `;
             return div;
           };
           legend.addTo(map);
 
+          // Rundown functionality
           const rundownBtn = document.querySelector(".rundown-btn");
           const rundownContainer = document.querySelector(".rundown-container");
           const rundownBody = document.getElementById("rundown-body");
+          const closeRundownBtn = document.querySelector(".close-rundown");
 
           rundownBtn.addEventListener("click", () => {
-            rundownContainer.classList.toggle("active");
-            if (rundownContainer.classList.contains("active")) {
-              rundownContainer.scrollIntoView({ behavior: "smooth" });
-            }
+            rundownContainer.classList.add("active");
+            rundownContainer.scrollIntoView({ behavior: "smooth" });
           });
 
-          const sampleRundown = [
-            {
-              time: "18:30",
-              activity: "Berkumpul",
-              location: "Masjid Baitussalam",
-            },
-            {
-              time: "19:00",
-              activity: "Pembukaan",
-              location: "Masjid Baitussalam",
-            },
-            {
-              time: "19:30",
-              activity: "Mulai Takbir Keliling",
-              location: "Rute Titik 1",
-            },
-            {
-              time: "22:00",
-              activity: "Selesai",
-              location: "Masjid Baitussalam",
-            },
-          ];
+          closeRundownBtn.addEventListener("click", () => {
+            rundownContainer.classList.remove("active");
+          });
 
           fetch("/tabel.json")
             .then((response) => response.json())
@@ -509,12 +545,12 @@
             rundownBody.innerHTML = data
               .map(
                 (item) => `
-                        <tr>
-                            <td>${item.time}</td>
-                            <td>${item.activity}</td>
-                            <td>${item.location}</td>
-                        </tr>
-                    `
+                    <tr>
+                        <td>${item.time}</td>
+                        <td>${item.activity}</td>
+                        <td>${item.location}</td>
+                    </tr>
+                `
               )
               .join("");
           }
