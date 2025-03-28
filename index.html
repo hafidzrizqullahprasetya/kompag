@@ -270,14 +270,18 @@
             scrollWheelZoom: "center",
             renderer: L.canvas(),
             preferCanvas: true,
-          }).setView([-7.75, 110.44], 13);
+            zoom: 17, // Default zoom
+            center: [-7.75, 110.44], // Default center
+          });
 
+          // Tile layer dengan pengaturan untuk ketajaman
           L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution:
               '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 19,
-            tileSize: 512,
-            zoomOffset: -1,
+            maxNativeZoom: 18, // Batasi zoom native untuk menghindari blur
+            tileSize: 256, // Ukuran standar untuk OSM
+            zoomOffset: 0,
             crossOrigin: "anonymous",
           }).addTo(map);
 
@@ -288,7 +292,6 @@
               return response.json();
             })
             .then((pointsData) => {
-              // Tambahkan layer titik dari data yang di-fetch
               const pointLayer = L.geoJSON(pointsData, {
                 filter: (feature) => feature.geometry.type === "Point",
                 pointToLayer: (feature, latlng) =>
@@ -302,7 +305,6 @@
                   }).bindPopup(`<b>Titik ${feature.properties.name}</b>`),
               }).addTo(map);
 
-              // Buat rute dari data yang di-fetch
               const routeOrder = Array.from({ length: 70 }, (_, i) =>
                 String(i + 1)
               );
@@ -353,9 +355,19 @@
                 }).addTo(map);
 
                 addArrowsToLine(smoothRoute);
+
+                // Atur view awal berdasarkan batas rute
                 map.fitBounds(routeLine.getBounds(), {
                   padding: [50, 50],
-                  maxZoom: 15,
+                  maxZoom: 15, // Batasi zoom maksimum agar tidak terlalu dekat
+                });
+
+                // Pastikan render ulang setelah peta dimuat
+                map.whenReady(() => {
+                  map.invalidateSize();
+                  if (document.body.contains(loadingDiv)) {
+                    document.body.removeChild(loadingDiv);
+                  }
                 });
               }
 
@@ -427,7 +439,6 @@
               loadingDiv.textContent = "Gagal memuat data titik";
             });
 
-          // [Sisanya sama seperti sebelumnya: mobile optimization, legend, rundown, dll.]
           if (window.innerWidth <= 768) {
             map.zoomControl.setPosition("topright");
           }
@@ -452,12 +463,6 @@
           };
           legend.addTo(map);
 
-          map.whenReady(() => {
-            if (document.body.contains(loadingDiv)) {
-              document.body.removeChild(loadingDiv);
-            }
-          });
-
           const rundownBtn = document.querySelector(".rundown-btn");
           const rundownContainer = document.querySelector(".rundown-container");
           const rundownBody = document.getElementById("rundown-body");
@@ -468,6 +473,29 @@
               rundownContainer.scrollIntoView({ behavior: "smooth" });
             }
           });
+
+          const sampleRundown = [
+            {
+              time: "18:30",
+              activity: "Berkumpul",
+              location: "Masjid Baitussalam",
+            },
+            {
+              time: "19:00",
+              activity: "Pembukaan",
+              location: "Masjid Baitussalam",
+            },
+            {
+              time: "19:30",
+              activity: "Mulai Takbir Keliling",
+              location: "Rute Titik 1",
+            },
+            {
+              time: "22:00",
+              activity: "Selesai",
+              location: "Masjid Baitussalam",
+            },
+          ];
 
           fetch("/tabel.json")
             .then((response) => response.json())
