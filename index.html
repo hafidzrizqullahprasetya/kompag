@@ -17,13 +17,14 @@
 
     <style>
       :root {
-        --primary: #2ecc71;
-        --secondary: #27ae60;
+        --primary: #05adb4;
+        --secondary: #08dcd9;
         --accent: #e74c3c;
         --text: #333;
-        --bg: #f0f4f8;
-        --white: #ffffff;
+        --bg: #f8efe0;
+        --white: #f8f4ec;
         --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --stroke-color: #07d3cf;
       }
 
       * {
@@ -52,6 +53,10 @@
         flex: 1;
         z-index: 1;
         min-height: 0;
+        border: 7px solid var(--stroke-color); /* Tambahkan stroke */
+        border-radius: 3px; /* Opsional: sudut membulat */
+        margin: 0; /* Jarak dari tepi layar */
+        box-shadow: var(--shadow); /* Opsional: tambah bayangan */
       }
 
       .header {
@@ -166,10 +171,8 @@
         box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
         overflow-y: auto;
         z-index: 4;
-        padding: 1rem;
-        border-radius: 10px 10px 0 0;
-        animation: slideUp 0.3s ease-in-out;
         padding: 1.5rem;
+        border-radius: 10px 10px 0 0;
       }
 
       .rundown-container h2 {
@@ -180,12 +183,29 @@
 
       .rundown-container.active {
         display: block;
+        animation: slideUp 0.3s ease-in-out forwards; /* Animasi saat membuka */
       }
 
-      .rundown-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 1rem;
+      .rundown-container.closing {
+        animation: slideDown 0.3s ease-in-out forwards; /* Animasi saat menutup */
+      }
+
+      @keyframes slideUp {
+        from {
+          transform: translateY(100%);
+        }
+        to {
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes slideDown {
+        from {
+          transform: translateY(0);
+        }
+        to {
+          transform: translateY(100%);
+        }
       }
 
       .rundown-table th,
@@ -202,8 +222,13 @@
         top: 0;
       }
 
+      /* Change all table row background colors */
+      .rundown-table tr:nth-child(odd) {
+        background: rgba(5, 173, 180, 0.1); /* Light version of primary */
+      }
+
       .rundown-table tr:nth-child(even) {
-        background: #f9f9f9;
+        background: rgba(5, 173, 180, 0.1); /* Light version of secondary */
       }
 
       .close-rundown {
@@ -244,6 +269,7 @@
 
         #map {
           height: 60vh;
+          border-width: 7px;
         }
 
         .rundown-btn {
@@ -538,20 +564,58 @@
             .then((data) => renderRundown(data))
             .catch((error) => {
               console.error("Error fetching rundown:", error);
+              // Define fallback data if fetch fails
+              const sampleRundown = [
+                {
+                  time: "19:00 - 19:30",
+                  activity: "Pembagian Lampu Stik & Snack",
+                  location: "Masjid Baitussalam",
+                },
+                {
+                  time: "19:30 - 19:45",
+                  activity: "Pembukaan & Doa",
+                  location: "Masjid Baitussalam",
+                },
+                {
+                  time: "19:45 - 21:00",
+                  activity: "Takbir Keliling",
+                  location: "Sesuai Rute",
+                },
+                {
+                  time: "21:00 - 21:15",
+                  activity: "Istirahat & Konsumsi",
+                  location: "Masjid Baitussalam",
+                },
+              ];
               renderRundown(sampleRundown);
             });
 
           function renderRundown(data) {
             rundownBody.innerHTML = data
-              .map(
-                (item) => `
-                    <tr>
-                        <td>${item.time}</td>
-                        <td>${item.activity}</td>
-                        <td>${item.location}</td>
+              .map((item) => {
+                let rowStyle = "";
+
+                // Style based on activity type
+                if (item.activity.includes("Pembagian")) {
+                  rowStyle = "background-color: rgba(5, 173, 180, 0.1);"; // Light primary
+                } else if (item.activity.includes("Takbir")) {
+                  rowStyle = "background-color: rgba(5, 173, 180, 0.1);"; // Light secondary
+                } else if (item.activity.includes("Pembukaan")) {
+                  rowStyle = "background-color: rgba(5, 173, 180, 0.1);"; // Medium primary
+                } else if (item.activity.includes("Lain - lain")) {
+                  rowStyle = "background-color: rgba(5, 173, 180, 0.1);"; // Medium secondary
+                } else if (item.activity.includes("Istirahat")) {
+                  rowStyle = "background-color: rgba(5, 173, 180, 0.1);"; // Light warm color
+                }
+
+                return `
+                    <tr style="${rowStyle}">
+                      <td style="font-weight: bold;">${item.time}</td>
+                      <td style="text-align: left; padding-left: 10px;">${item.activity}</td>
+                      <td>${item.location}</td>
                     </tr>
-                `
-              )
+                  `;
+              })
               .join("");
           }
         } catch (error) {
